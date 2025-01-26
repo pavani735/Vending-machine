@@ -1,0 +1,79 @@
+ng_machine (
+    input clk,           // Clock signal
+    input reset,         // Reset signal
+    input coin_1,        // ₹1 coin input
+    input coin_5,        // ₹5 coin input
+    input sel_A,         // Select product A
+    input sel_B,         // Select product B
+    output reg disp_A,   // Dispense product A
+    output reg disp_B,   // Dispense product B
+    output reg [3:0] change // Change to return
+);
+
+    // State declaration
+    typedef enum logic [1:0] {
+        IDLE = 2'b00,
+        COIN_INSERTED = 2'b01,
+        DISPENSE_PRODUCT = 2'b10,
+        RETURN_CHANGE = 2'b11
+    } state_t;
+
+    state_t current_state, next_state;
+
+    reg [3:0] balance; // To store the inserted amount
+
+    // State transition logic
+    always @(posedge clk or posedge reset) begin
+        if (reset) begin
+            current_state <= IDLE;
+            balance <= 0;
+        end else begin
+            current_state <= next_state;
+        end
+    end
+
+    // Next state logic and output logic
+    always @(*) begin
+        // Default values
+        next_state = current_state;
+        disp_A = 0;
+        disp_B = 0;
+        change = 0;
+
+        case (current_state)
+            IDLE: begin
+                if (coin_1) balance = balance + 1;
+                else if (coin_5) balance = balance + 5;
+
+                if (balance > 0)
+                    next_state = COIN_INSERTED;
+            end
+
+            COIN_INSERTED: begin
+                if (sel_A && balance >= 5) begin
+                    next_state = DISPENSE_PRODUCT;
+                end else if (sel_B && balance >= 7) begin
+                    next_state = DISPENSE_PRODUCT;
+                end
+            end
+
+            DISPENSE_PRODUCT: begin
+                if (sel_A && balance >= 5) begin
+                    disp_A = 1;
+                    balance = balance - 5;
+                end else if (sel_B && balance >= 7) begin
+                    disp_B = 1;
+                    balance = balance - 7;
+                end
+                next_state = RETURN_CHANGE;
+            end
+
+            RETURN_CHANGE: begin
+                change = balance;
+                balance = 0;
+                next_state = IDLE;
+            end
+        endcase
+    end
+endmodule
+

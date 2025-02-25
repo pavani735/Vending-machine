@@ -1,4 +1,4 @@
-ng_machine (
+vending_machine (
     input clk,           // Clock signal
     input reset,         // Reset signal
     input coin_1,        // ₹1 coin input
